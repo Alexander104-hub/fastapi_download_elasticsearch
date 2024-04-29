@@ -1,5 +1,5 @@
 # fast api download
 
-sudo docker-compose build
+docker-compose build
 
-sudo docker-compose up
+docker-compose up
