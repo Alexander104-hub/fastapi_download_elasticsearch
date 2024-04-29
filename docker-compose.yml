@@ -1,0 +1,50 @@
+version: '3.7'
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.2.2
+    container_name: elasticsearch
+    volumes:
+      - elasticsearch:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    depends_on:
+      - rabbit
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+      - node.name=elasticsearch
+      - cluster.name=elastic_cluster
+      - cluster.initial_master_nodes=elasticsearch
+    mem_limit: 1073741824
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+  fastapi_app:
+    build: './fastapi_app'
+    command: sh -c "uvicorn app:app --port=5000 --host=0.0.0.0"
+    ports:
+      - "5000:5000"
+    depends_on:
+      - rabbit
+      - elasticsearch
+  simple_worker:
+    build: './simple_worker'
+    depends_on:
+      - rabbit
+      - fastapi_app
+      - elasticsearch
+  rabbit:
+    hostname: rabbit
+    image: "rabbitmq:3-management"
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=mypass
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+
+volumes:
+  elasticsearch:
+    driver: local
